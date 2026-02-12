@@ -20,9 +20,14 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
   pi1_matrix <- matrix(nrow = reps, ncol = num_scen)
   pi2_matrix <- matrix(nrow = reps, ncol = num_scen)
   pi3_matrix <- matrix(nrow = reps, ncol = num_scen)
+  
+  acc_matrix <- matrix(nrow = reps, ncol = num_scen)
+  time_matrix <- matrix(nrow = reps, ncol = num_scen)
 
-  for(rep in 1){
-    for(d in 2){
+  for(rep in 1:2){
+    for(d in 2:3){
+      
+      start_time <- Sys.time()
       
       # Set up the group membership matrix, z_mat
       y_data <- data_list[[rep]][[d]]
@@ -92,29 +97,21 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
         previous_pars <- these_pars
         these_pars <- c(param_vec, pi_vect)
       }
-      
-      alpha_est <- c(param_vec[2:3], 0-sum(param_vec[2:3]))
-      alpha_est_sorted <- sort.int(alpha_est, 
-                                   index.return = TRUE, 
-                                   decreasing = FALSE)$x
-      # sorted output
-      alpha_estim_sorted_id <- sort.int(alpha_est, 
-                                        index.return = TRUE, 
-                                        decreasing = FALSE)$ix
-      pi_estim_unsort <- pi_vect
-      pi_estim_sorted <- pi_vect[alpha_estim_sorted_id]
-      label_swap_id[1,] <- alpha_estim_sorted_id
+      end_time <- Sys.time()
+      time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+      time_matrix[rep, d-1] <- time_taken
       
       
-      pred_labels <- max.col(z_mat)
-      # split sorted and unsorted estimated Z
+      labels_est <- rep(NA, n_unknown)
+      for(i in 1:n_unknown){
+        labels_est[i] <- which(z_mat[(i+n_known),] == max(z_mat[i+n_known,]))
+      }
       
+      acc_matrix[rep, d-1] <- mean(labels_est == y_data$r[-c(1:n_known)])
+      #print(labels_est)
+      #print(y_data$r[-c(1:n_known)])
+        #sum(labels_est == y_data$r[-c(1:n_known)])/n_unknown
       
-      # problem with the sorting of the dataset
-      # unknown
-      z_unk_est_unsort <- z_mat
-      z_unk_est_sort <- z_mat[, alpha_estim_sorted_id]
-        
       mu_matrix[rep, d-1] <- param_vec[1]
       alpha_matrix_R1[rep, d-1] <- param_vec[2]
       alpha_matrix_R2[rep, d-1] <- param_vec[3]
@@ -140,5 +137,7 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
               bp4 = beta_matrix_p4,
               pi1 = pi1_matrix,
               pi2 = pi2_matrix,
-              pi3 = pi3_matrix))
+              pi3 = pi3_matrix,
+              acc = acc_matrix,
+              time = time_matrix))
 }
