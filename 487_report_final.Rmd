@@ -1,0 +1,416 @@
+---
+title: ""
+subtitle: ""
+author: ""
+output:
+  pdf_document: 
+    includes:
+      in_header: RMarkdownThesis.tex
+    number_sections: true
+documentclass: article
+fontsize: 12pt
+classoption: a4paper  
+bibliography: bibtex.bib
+csl: apa.csl
+header-includes:
+  - \numberwithin{equation}{section}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\title{DATA 487 Project: \\ An Investigation Into the Robustness of Semi-supervised Model-based Clustering Using Binary Data With Incorrect Labels} 
+\author{Jessica Sam \\ School of Mathematics and Statistics \\ Victoria University of Wellington, New Zealand} 
+\date{}
+
+\maketitle
+
+\begin{abstract}
+Semi-supervised instead of unsupervised clustering methods, can be helpful since prior knowledge of cluster assignments for a subset of data, can inform better clustering for data with unknown assignments. Using finite mixture models with the Expectation-Maximisation algorithm is a way to cluster data, so statistical inference can be used to evaluate clustering performance. However, for many semi-supervised clustering methods, labels are typically assumed to be correct, so it is often unknown how well these clustering methods perform when data may be incorrectly labelled. This research project proposes to explore the impact of incorrectly labelled data on semi-supervised clustering using finite mixture models. Simulation studies using binary response data will be carried out, with the behaviour of parameter estimates analysed under different data scenarios.
+\end{abstract}
+
+\newpage
+
+\tableofcontents
+
+\setlength{\baselineskip}{0.25in}
+
+\newpage
+
+# Introduction
+
+Clustering is a common, typically unsupervised technique to divide a set of observations into groups, or clusters, with the concept that observations within the same cluster share more similarity compared to observations from two different clusters. Clustering is used for many practical applications such as finance, technology, healthcare and even marketing. An example in marketing is customer segmentation, where customers are grouped by similar traits and behaviour to create product recommendations tailored to customer groupings [@madhulatha_2012].
+
+Unsupervised clustering groups data that are entirely unlabelled, with no prior information about the true cluster assignments. This differs from semi-supervised clustering, where there exists some proportion of labelled data points that guide the clustering of unlabelled data. Semi-supervised clustering often results in improved performance due to the addition of labelled data that inform the model [@cai_2023].
+
+However, in many semi-supervised clustering methods, the labels are typically assumed to be known with full certainty. It is often unrealistic to expect labels to be certain, as various labelling methods can result in incorrect or unreliable labels to some degree of confidence [@antoine_2018].
+
+Data used in clustering problems tend to be expressed as a matrix, an array of responses arranged in rows and columns. A binary data matrix has entries encoded as a value of 1 or 0.
+
+The objective of this research project is to investigate, through simulation, the robustness of semi-supervised model-based clustering when all three situations below simultaneously occur:
+
+1.  When a matrix of binary data is used for row clustering;
+
+2.  When data points may be incorrectly labelled;
+
+3.  When clustering is performed using the model-based finite-mixtures method [@mclachlan_2000].
+
+\newpage
+
+## Literature Review
+
+To understand how using incorrect labels will affect semi-supervised clustering for binary data, we need to explain the methods required for this research.
+
+Finite mixtures, as detailed in @mclachlan_2000, are one type of model used for model-based clustering. The overall idea of mixture models has been used for a long time, @pearson_1894 being one of the commonly cited sources for its origin. The idea of finite mixture models is that data are drawn from a mixture of clusters, where each cluster is associated with its own probability density function.
+
+Maximum Likelihood (ML) estimation, a fundamental statistical estimation method proposed by @fisher_1922, estimates parameter values for a model, such that the selected estimates maximise the probability of observing the data.
+
+@dempster_1977 proposed the Expectation-Maximisation (EM) algorithm, an algorithm which estimates model parameters via ML when there is missing data. This is an iterative algorithm consisting of two steps, the Expectation step (E-step) and the Maximisation step (M-step), which alternate until convergence. The E-step is where expectations are taken over all the incomplete data, using the parameter estimates at the current state, to provide estimates of the missing data. The M-step is where the completed data, being the original data and latent estimates of missing data, are used to maximise the completed data likelihood to provide new parameter estimates. This algorithm is widely applicable to a range of different data scenarios, while maintaining simplicity.
+
+The EM algorithm is good for fitting finite mixture models, as in this case, the cluster memberships are treated as the missing data, and latent variables are estimated to indicate the probability of membership to clusters.
+
+@pledger_2014 suggest a group of likelihood-based models for clustering binary or count data in the structure of a matrix, based on Bernoulli or Poisson mixtures. This provides a starting point for the model in this project as a general unsupervised clustering approach for binary data matrices.
+
+Semi-supervised model-based clustering has, in the last number of years, received more interest. @cui_2024 introduced a novel semi-supervised model-based clustering method for ordinal data. This method uses the proportional odds model as the model structure for the ordinal data, and the clustering model is a finite mixture model fitted using the EM algorithm. Their paper demonstrates, through simulation, that the technique can effectively cluster partially labelled data with ordinal responses, given the labels are all correct. This paper provides a more complex model than what we aim to use. Ordinal data with only two levels of response can simplify to binary data, resulting in the use of a logistic binary model instead of a proportional odds model.
+
+Recent studies also exist that investigate how noisy, incorrect labels or pairwise annotations impact semi-supervised clustering. Several of these papers focus on developing new methods that are robust to such data issues. These studies tend to show reasonable performance, each using methods of their respective papers, but tend to focus on distance-based or constraint-based clustering methods, rather than model-based clustering methods. Overall, they show that the addition of labels is still a net positive effect on performance, but this is dependent on the clustering methods used, and how the noisy the labels are.
+
+@gan_2018 propose a method for safe semi-supervised clustering, where the focus is around ensuring model performance is robust to data quality issues from prior knowledge. This method uses a local homogeneous graph to model the relationship between labelled data and unlabelled data, to construct a regularisation term which accounts for the riskiness of labelled samples. The datasets the algorithm is evaluated on, each consist of 20% labelled data, with the rest of the dataset unlabelled. They change the proportion of labelled data that is incorrect from 0 to 30%, using 5% increments. They show that their algorithm, even if the proportion of incorrectly labelled data reaches 30%, still outperforms the respective unsupervised and semi-supervised clustering methods.
+
+@antoine_2018 explores the effect of using incorrect labels on variants of semi-supervised fuzzy clustering (c-clustering) and proposes new approaches which are tailored to handle the uncertainty in labelled data. Their study shows using incorrect or uncertain labelling with fuzzy clustering can still provide a reasonable clustering performance, despite the uncertainty. Despite this reasonable performance, noisy labels generated less accurate solutions compared to using correct labels. They also note that if the data has noisy labels, reducing the label certainty for the semi-supervised clustering allows an improvement in accuracy, compared to using unsupervised clustering alone.
+
+@gribel_2022 explores the effect of using inaccurate pairwise annotations for semi-supervised constrained clustering. They state that class labels may be difficult to obtain and instead, relational information can be used, like “must-links” to indicate a pair of samples should be in the same cluster, and “cannot-links” that indicate a pair of samples should not be in the same cluster. Using a maximum likelihood approach, they propose a generative model that models data as coming from Gaussian distributions and has such link relations generated by stochastic block models. They show although there may be inaccurate annotations or a small quantity of annotations, using the links still improves clustering performance compared to excluding the relational information.
+
+An exploration into previous literature indicates a lack of investigation around the implications of using incorrect data within semi-supervised clustering methods in general. The performances of some semi-supervised clustering methods with incorrect data have been evaluated, but most of these methods are not model-based, meaning that statistical inference cannot be made with them. This justifies looking at the robustness of using finite mixture modelling with a matrix of binary responses. This will serve as a binary-data complement to the work of @cui_2024 on ordinal models.
+
+\newpage
+
+# Methodology
+
+## Data Structure and Binary Model
+
+We now define the structure of the binary response data matrix used for finite-mixture clustering and the data model.
+
+We can consider a questionnaire consisting of $n$ respondents who answer $p$ questions, where each question is answered with a binary "Yes" or "No" response. Each respondent will answer $p$ questions, resulting in a total of $n \times p$ responses. The responses to this questionnaire can be represented in the structure of an $n \times p$ matrix denoted by $\boldsymbol{Y}$, where $n$ is the number of rows and $p$ is the number of columns. Each observation $y_{ij} \in \{0,1\}$ in the matrix is some respondent's answer to a question, with a "Yes" response encoded with $1$ and a "No" response encoded as $0$, with subscripts taking values $i = 1,2, ... , n$ and $j = 1,2, ..., p$. Table \ref{tab:example_mat} illustrates what a questionnaire matrix might look like.
+
+\begin{table}[htbp]
+\begin{center}
+\caption{Example questionnaire matrix with \(n\) respondents and \(p\) questions with binary responses.}
+\vspace{.1in}
+\label{tab:example_mat}
+\begin{tabular}{c|c c c c c} 
+Respondent & \(Q_1\) & \(Q_2\) & \(Q_3\)& \(\cdots\) & \(Q_p\)  \\
+\hline
+1 & 1 & 0 & 1 & \(\cdots\) & 1\\
+2 & 0 & 1 & 1 &  \(\cdots\) & 1\\
+3 & 0 & 0 & 1 & \(\cdots\) & 0\\
+4 & 1 & 0 & 0 & \(\cdots\) & 1\\
+5 & 1 & 1 & 0 & \(\cdots\) & 0\\
+\(\vdots\) & \(\vdots\) & \(\vdots\) & \(\vdots\) & \(\ddots\) & 0\\ 
+n & 0 & 1 & 1 & \(\cdots\) & 1\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+With this data matrix, before accounting for any clustering patterns, a simple logistic binary model can be made by considering there will be distinct response patterns. In the example of a questionnaire, answering "Yes" to a question depends on which respondent answers and which question is asked. These can be known as row effects, represented by $\{\alpha_i\}$, with $i = 1,2, ... , n$, and column effects, represented by $\{\beta_j\}$, with $j = 1,2,..., p$. This models the log odds of a positive response, or a success, as an overall mean $\mu$ with some row effect $\alpha_i$ and some column effect $\beta_j$, as follows:
+
+\begin{equation}
+\text{logit}[\theta_{ij}] = \mu + \alpha_i + \beta_j,
+\label{eq:logistic}
+\end{equation}
+
+where $\theta_{ij}$ represents $P(y_{ij} = 1)$, the probability of success, or responding with a $1$. Here, sum to zero constraints are used, $\sum_{i=1}^n\alpha_i = 0$ and $\sum_{j=1}^p \beta_j = 0$.
+
+## Row Clustering Binary Model
+
+The model in \eqref{eq:logistic} accounts for each individual row and column effect, as expressed by the $\alpha$ and $\beta$ parameters. With row clustering, the number of $\alpha$ parameters needed can be reduced by assuming that each row can belong to one of $R$ row clusters. Instead of the row effects being expressed as $\{\alpha_i\}$, where $i = 1,2, ..., n$, they can instead be expressed as row cluster effects $\{\alpha_r\}$ with $r = 1, 2,... , R$.
+
+The row clustering model with individual column effects becomes:
+
+\begin{equation}
+\begin{aligned}
+\text{logit}[\theta_{rj} | i \in r)] &= \mu + \alpha_r + \beta_j \\ 
+i = 1,2, ... , n, \quad &j = 1,2,..., p, \quad r = 1,2,...,R.
+\end{aligned}
+\label{eq:rowclust}
+\end{equation}
+
+Here, in \eqref{eq:rowclust}, $i \in r$ refers to a particular row $i$ belonging to the cluster $r$. $\theta_{rj}$ represents the probability of success for a particular row $i \in r$ and column $j$.
+
+## Unsupervised Row Clustering
+
+The exact cluster assignments for the rows in unsupervised clustering are unknown, so this is treated as missing information to compute when using the EM algorithm.
+
+The unknown proportions of rows that belong to each cluster can be defined as $\{\pi_r\}$ where $r = 1,2, ... , R$, with the constraint $\sum_{r=1}^R \pi_r = 1$.
+
+The assumption is made that the rows are independent, given their cluster memberships, and that for every row, the $p$ columns come from independent trials, where an observation $y_{ij}$ has the probability $\theta_{ij}$ of success for $i \in r$. With this assumption, the likelihoods for the model in \eqref{eq:rowclust} can be constructed with the knowledge that values from the matrix come from Bernoulli distributions, with probabilities of success $\{\theta_{rj}\}$.
+
+### Likelihoods
+
+The overall likelihood for the non-clustered binary matrix model can be expressed using the probability density function for the Bernoulli distribution:
+
+\begin{equation}
+L(\boldsymbol{\theta};\boldsymbol{y}) = \prod_{i=1}^n \prod_{j=1}^p
+\theta_{ij}^{y_{ij}}(1-\theta_{ij})^{1-y_{ij}}.
+\label{eq:L1}
+\end{equation}
+
+The typically easier-to-compute log-likelihood for the binary model is expressed as:
+
+\begin{equation}
+\ell(\boldsymbol{\theta};\boldsymbol{y}) = \sum_{i=1}^n \sum_{j=1}^p \left [ y_{ij}\log\theta_{ij} + (1-y_{ij}) \log (1-\theta_{ij})\right].
+\label{eq:LL1}
+\end{equation}
+
+With row clustering, we say that the rows can be clustered in $R$ groups, where $\pi_1, \pi_2, ... \pi_R$ are the probabilities of belonging to each of the $R$ clusters, with $\sum_{r=1}^R\pi_r = 1$.
+
+This changes the overall data likelihood and log-likelihood from \eqref{eq:L1} and \eqref{eq:LL1} to:
+
+\begin{equation}
+L(\boldsymbol{\Omega}, \boldsymbol{\pi}; \boldsymbol{y}) = \prod_{i=1}^n L_i = \prod_{i=1}^n \left[\sum_{r=1}^R\left[\pi_r \prod_{j=1}^p\theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}} \right] \right]
+\label{eq:L2}
+\end{equation}
+
+and
+
+\begin{equation}
+\ell(\boldsymbol{\Omega}, \boldsymbol{\pi}; \boldsymbol{y}) = \sum_{i=1}^n \log\left[\sum_{r=1}^R\left[\pi_r \prod_{j=1}^p\theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}} \right]  \right]
+\label{eq:LL2}
+\end{equation}
+
+where $\boldsymbol{\Omega} = \{\mu, \{\alpha_r\}, \{\beta_j\}\}$ is the non-redundant parameter vector of \eqref{eq:rowclust} that we want to obtain.
+
+The equation \eqref{eq:LL2} is still not convenient to compute, so a latent variable is introduced to simplify the log-likelihood, under the assumption that we have complete knowledge about the cluster assignments. The missing information about the cluster assignments can be written as an $n \times R$ matrix $\boldsymbol{Z}$, with the latent variable being $z_{ir} = 1$ if a particular row $i$ belongs to the cluster $r$, and $z_{ir} = 0$ otherwise.
+
+With this additional information from $z_{ir}$, another type of likelihood, called the complete-data likelihoods, can be constructed.
+
+The complete-data likelihood incorporating the latent variables can be written as $L_C$, changing \eqref{eq:L2} to:
+
+\begin{equation}
+L_C(\boldsymbol{\Omega},\boldsymbol{\pi};\boldsymbol{y},\boldsymbol{z}) = \prod_{i=1}^n \prod_{r=1}^R\left[\pi_r\prod_{j=1}^p\theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}}\right]^{z_{ir}}
+\end{equation}
+
+with the corresponding \eqref{eq:LL2} modified to the complete-data log-likelihood $\ell_C$:
+
+\begin{equation}
+\ell_C(\boldsymbol{\Omega},\boldsymbol{\pi};\boldsymbol{y},\boldsymbol{z}) = \sum_{i=1}^n \sum_{r=1}^R z_{ir} \log \left[\pi_r\prod_{j=1}^p \theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}}\right].
+\label{eq:complete_unsuper_ll1}
+\end{equation}
+
+Rearrangement of \eqref{eq:complete_unsuper_ll1} gives an easier-to-compute:
+
+\begin{equation}
+\begin{split}
+\ell_C(\boldsymbol{\Omega},\boldsymbol{\pi};\boldsymbol{y},\boldsymbol{z}) = &\sum_{i=1}^n \sum_{r=1}^R  z_{ir} \log \pi_r + \\ &\sum_{i=1}^n \sum_{r = 1}^R \sum_{j=1}^pz_{ir} \log \left[y_{ij}\log \theta_{rj} + (1-y_{ij})\log (1-\theta_{rj}) \right].
+\label{eq:complete_unsuper_ll}
+\end{split}
+\end{equation}
+
+### EM Algorithm
+
+The EM algorithm lets us find the parameter estimates: $\boldsymbol{\hat{\Omega}}, \{\hat{\pi}_r\}, \{\hat{z}_{ir}\}$, using the likelihood computed above. The algorithm will continue alternating between the E and M steps, until the parameters converge.
+
+### Expectation Step (E-Step)
+
+The expectation of the latent variable $z_{ir}$ is taken to estimate the missing cluster assignments and is calculated by using the current parameter estimates, $\hat{\boldsymbol{\Omega}}$ and $\{\hat{\pi}_r\}$. It is also the posterior probability of the row $i$ being in the cluster $r$, given the data in row $i$. This is calculated by:
+
+\begin{equation}
+E(z_{ir}) = P(i\in r|\boldsymbol{y}_i)= \frac{P(i \in r , \boldsymbol{y}_i)}{P(\boldsymbol{y}_i)} = \frac{\pi_r \prod_{j=1}^p \theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}}}{\sum_{h=1}^R \pi_h \prod_{j=1}^p \theta_{hj}^{y_{ij}}(1-\theta_{hj})^{1-y_{ij}}}
+\label{eq:expectation}
+\end{equation}
+
+where $\mathbf{y}_i = \{y_{i1}, ..., y_{ip} \}$.
+
+### Maximisation Step (M-step)
+
+The complete-data log-likelihood from \eqref{eq:complete_unsuper_ll}, using the values for $z_{ir}$ calculated in the expectation step, is then maximised to obtain the estimates $\boldsymbol{\hat{\Omega}}$ and $\{\hat{\pi}_r\}$.
+
+$\hat{\pi}_r$ is calculated by the equation:
+
+\begin{equation}
+\hat{\pi}_r = \frac{\sum_{i=1}^n z_{ir}}{n}.
+\label{eq:pi_est}
+\end{equation}
+
+Numeric optimisation of the second term of \eqref{eq:complete_unsuper_ll} finds the parameter estimates, $\hat{\boldsymbol{\Omega}}$:
+
+\begin{equation}
+\boldsymbol{\hat{\Omega}} = \underset{\boldsymbol{\Omega}}{\text{argmax}}\left[\sum_{i=1}^n \sum_{r = 1}^R \sum_{j=1}^p z_{ir} \log \left[y_{ij}\log \theta_{rj} + (1-y_{ij})\log (1-\theta_{rj})\right] \right],
+\label{eq:optim}
+\end{equation}
+
+where $\theta_{rj}$ is a function of $\boldsymbol{\Omega}$, derived from equation \eqref{eq:rowclust}.
+
+## Semi-supervised Row Clustering
+
+For the semi-supervised case where there are known cluster assignments for a subset of the data, the data matrix can be considered to have an extra column for the known cluster assignments, compared to the unsupervised case in Table \ref{tab:example_mat}:
+
+\begin{table}[htbp]
+\begin{center}
+\caption{Example data matrix with \(n\) rows and \(p\) columns with binary responses and some existing cluster labels. NA represents no knowledge of cluster assignment.}
+\vspace{.1in}
+\label{tab:label_mat}
+
+\begin{tabular}{c|c c c c|c} 
+Observation & \(1\) & \(2\) & \(\cdots\) & \(p\) & Cluster\\
+\hline
+1 & 1 & 0 & \(\cdots\) & 1 & 1\\
+2 & 0 & 1 & \(\cdots\) & 1 & 2\\
+\(\vdots\) &\(\vdots\) & \(\vdots\) & \(\ddots\) & \(\vdots\) & \(\vdots\) \\ 
+\(n_l\) & 0 & 0 & \(\cdots\) & 0 & 3 \\
+\(n_l + 1 \) & 1 & 0 & \(\cdots\) & 1 & NA \\
+\(n_l + 2 \) & 1 & 1 & \(\cdots\) & 0 & NA \\
+\(\vdots\) & \(\vdots\) & \(\vdots\) & \(\cdots\) & \(\vdots\) & \(\vdots\) \\
+\(n_l + n_u \) & 1 & 0 & \(\cdots\) & 1 & NA \\
+
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+In Table \ref{tab:label_mat}, $n_l$ represents the total number of rows with known clustering labels, and $n_u$ represents the total number of rows with unknown clustering labels.
+
+Instead of the unsupervised case that assigns clusters to all data points, the semi-supervised case will only assign clusters to the data points where the cluster memberships are unknown. As a result, values computed in parameter estimation steps for semi-supervised clustering are not the same as the parameters estimated in the unsupervised clustering.
+
+### Likelihoods
+
+The overall and complete-data likelihoods associated with the semi-supervised clustering below are obtained from @cui_2024.
+
+The overall data likelihood $L(\boldsymbol{\Omega}, \boldsymbol{\pi};\boldsymbol{y})$ can be expressed as:
+
+\begin{equation} 
+L(\boldsymbol{\Omega}, \boldsymbol{\pi};\boldsymbol{y}) = \prod_{i=1}^{n_l}\prod_{j=1}^p \prod_{r=1}^R \left[\theta_{rj}^{y_{ij}} (1-\theta_{rj})^{1-y_{ij}}\right]^{I(i\in r)} \times \sum_{i=n_l+1}^{n_l + n_u} \sum_{r=1}^R \pi_r\prod_{j=1}^p \theta_{rj}^{y_{ij}}(1-\theta_{rj}) ^{1-y_{ij}},
+\label{eq:overall_semi_L} 
+\end{equation}
+
+where $I(i\in r) = 1$ if the $i^{th}$ observation is known to be in cluster $r$, and $I(i\in r) = 0$ otherwise.
+
+The corresponding overall data log-likelihood $\ell(\boldsymbol{\Omega}, \boldsymbol{\pi};\boldsymbol{y})$ is written as:
+
+\begin{equation}
+\begin{split}
+\ell(\boldsymbol{\Omega},\boldsymbol{\pi};\boldsymbol{y}) = & \sum_{i=1}^{n_\ell} \sum_{j=1}^p \sum_{r=1}^R I(i\in r) \left[y_{ij} \log \theta_{rj} + (1-y_{ij}) \log (1-\theta_{rj})\right] + \\
+& \sum_{i=n_l + 1} ^ {n_l + n_u} \log \left[ \sum_{r=1}^R \pi_r \prod_{j=1}^p \theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}}\right].
+\label{eq:overall_semi_ll}
+\end{split}
+\end{equation}
+
+The complete-data log-likelihood $\ell_C(\boldsymbol{\Omega}, \boldsymbol{\pi};\boldsymbol{y}, \boldsymbol{z})$ is expressed as:
+
+\begin{equation}
+\begin{split}
+     \ell_C(\boldsymbol{\Omega},\boldsymbol{\pi};\boldsymbol{y}, \boldsymbol{z}) = &\sum_{i=1}^{n_l}\sum_{r=1}^R\sum_{j=1}^p I(i\in r) \left[y_{ij}\log \theta_{rj} + (1-y_{ij}) \log (1-\theta_{rj}) \right] + \\
+     &\left[ \sum_{i=n_l + 1}^{n_l + n_u} \sum_{r=1}^R z_{ir} \log \pi_r + \sum_{i=n_l + 1}^{n_l + n_u} \sum_{j=1}^p \sum_{r=1}^R z_{ir}\left[y_{ij} \log \theta_{rj} + (1-y_{ij})\log (1-\theta_{rj}) \right] \right].
+\label{eq:complete_semi_ll}
+\end{split}
+\end{equation}
+
+### Expectation Step (E-step)
+
+It is only necessary to calculate $E[z_{ir}]$ for the rows with unknown cluster assignments and not the rows with known cluster assignments, since the values for $z_{ir}$ for the labelled data can be fixed for every iteration of the algorithm.
+
+In this case, using $E[z_{ir}]$ can be rewritten as:
+
+\begin{equation}
+E[z_{ir}] = \begin{cases}
+I(i = r), & i \in \{1,...,n_l\} \\ 
+\frac{\pi_r \prod_{j=1}^p \theta_{rj}^{y_{ij}}(1-\theta_{rj})^{1-y_{ij}}}{\sum_{h=1}^R \pi_h \prod_{j=1}^p \theta_{hj}^{y_{ij}}(1-\theta_{hj})^{1-y_{ij}}}, & i \in \{n_l + 1,...,n_l + n_u\}.
+\end{cases}
+\label{eq:expectation2}
+\end{equation}
+
+### Maximisation Step (M-Step)
+
+With semi-supervised clustering, the overall log-likelihood and the complete-data log-likelihood equations are the same as what was described for unsupervised clustering, except that the labelled data uses exact, known $\{z_{ir}\}$ instead of $\{\hat{z}_{ir}\}$.
+
+With the obtained $\hat{z}_{ir}$ values computed from the expectation step, and with the exact $z_{ir}$ values from the labelled data, the complete-data log-likelihood \eqref{eq:complete_unsuper_ll} is maximised, like in the unsupervised case, to obtain parameter estimates $\hat{\boldsymbol{\Omega}}$ and $\{\hat{\pi}_{r}\}$.
+
+## Simulations
+
+All of the simulated datasets are created with $p=5$ columns, $R=3$ row clusters, but different numbers of rows: $n = (300, 1000, 3000)$. The datasets were generated with equal proportions of rows assigned to each cluster.
+
+\begin{table}[htbp]
+\begin{center}
+\caption{Simulation combinations of dataset size, \(n\), proportion of data labelled \(m\), and proportion of the \(m\%\) labelled data that are incorrect, \(s\).}
+\label{tab:sim_tab}
+\vspace{.1in}
+
+\begin{tabular}{c|c|c}
+\textbf{n} & \textbf{m (known)} & \textbf{s (wrongly labelled)} \\ \hline
+\multirow{6}{*}{300} & \multirow{3}{*}{10\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \cline{2-3} 
+ & \multirow{3}{*}{30\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \hline
+\multirow{6}{*}{1000} & \multirow{3}{*}{10\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \cline{2-3} 
+ & \multirow{3}{*}{30\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \hline
+\multirow{6}{*}{3000} & \multirow{3}{*}{10\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \cline{2-3} 
+ & \multirow{3}{*}{30\%} & 10\% \\
+ &  & 30\% \\
+ &  & 50\% \\ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The true value for $\mu$ was set at $0$.
+
+True values of the $\{\alpha_r\}$ and $\{\beta_j\}$ parameters were set, following the simulation scenarios proposed by @cui_2025 as:as:
+
+-   $\{\alpha_1, \alpha_2, \alpha_3\} = \{-2.0, 0.0, 2.0\}$
+
+-   $\{\beta_1, \beta_2, \beta_3, \beta_4, \beta_5 \} = \{-2.0, -1.5, 0.3, 1.0, 2.2 \}$
+
+Both $\{\alpha_r\}$ and $\{\beta_j\}$ parameters were set using sum-to-zero constraints.
+
+Table \ref{tab:sim_tab} lists all the different combinations of dataset size, $n$, proportion of data labelled, $m$ and proportion of labelled data that are incorrect $s$, to run simulations. For each combination of $n$, $m$ and $s$, 100 replicate datasets were simulated.
+
+## Clustering Performance Measures
+
+After the model fitting procedure is done for $H = 100$ replicates of each data scenario, the mean and standard deviations for each parameter estimate in $\hat{\boldsymbol{\Omega}}$ and $\{\hat{\alpha}_r\}$ are calculated from the replicates.
+
+These will be calculated as follows:
+
+\begin{equation}
+\text{Mean}(\hat{\omega}) = \frac{1}{H} \sum_{h=1}^H \hat{\omega}^{(h)}, 
+\end{equation} \begin{equation}
+\text{s.d}(\hat{\omega}) = \text{s.d}\left(\hat{\omega}^{(h=1)}, \hat{\omega}^{(h=2)}, ..., \hat{\omega}^{(h=100)}\right),
+\end{equation}
+
+where $\hat{\omega}$ represents some component of the parameter vector $\hat{\boldsymbol{\Omega}}$ or the set of $\{\hat{\pi}_r\}$, such as $\hat{\mu}$ or $\hat{\pi}_1$.
+
+Mean parameter estimates and accuracies are used to judge how good the clustering performance is for each data scenario. The mean parameter estimates from $\hat{\boldsymbol{\Omega}}$ will be compared to the true values for the simulated datasets and predicted labels will be compared to the true labels to calculate clustering accuracy.
+
+## Statistical Software
+
+All analyses in the study were conducted using the **R** software (version 4.5.1) [@R]. The `optim()` function, using the quasi-Newton method (LBFGS-B), was chosen to maximise the terms from the complete-data log-likelihood in the M-step.
+
+\newpage
+
+# Results
+
+\newpage
+
+# Discussion
+
+-   scenario where there is not an observation from each cluster present in the dataset
+
+-   if the clustering manages to pick up on if incorrect labels should actually be recorrected
+
+-   setting initial parameter estimates to random values instead of using algorithm to set randomly
+
+-   kept a balanced design for simplicity, assumed that a third of the data is assigned to each cluster
+
+\newpage
+
+\bibliographystyle{apacite}
+
+# References

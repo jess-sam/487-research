@@ -1,0 +1,21 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Literature Review}{4}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Methodology}{7}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Data Structure and Binary Model}{7}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Row Clustering Binary Model}{8}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Unsupervised Row Clustering}{8}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Likelihoods}{8}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}EM Algorithm}{10}{subsubsection.2.3.2}%
+\contentsline {subsubsection}{\numberline {2.3.3}Expectation Step (E-Step)}{10}{subsubsection.2.3.3}%
+\contentsline {subsubsection}{\numberline {2.3.4}Maximisation Step (M-step)}{10}{subsubsection.2.3.4}%
+\contentsline {subsection}{\numberline {2.4}Semi-supervised Row Clustering}{11}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}Likelihoods}{12}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Expectation Step (E-step)}{12}{subsubsection.2.4.2}%
+\contentsline {subsubsection}{\numberline {2.4.3}Maximisation Step (M-Step)}{13}{subsubsection.2.4.3}%
+\contentsline {subsection}{\numberline {2.5}Simulations}{13}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Clustering Performance Measures}{15}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Statistical Software}{15}{subsection.2.7}%
+\contentsline {section}{\numberline {3}Results}{16}{section.3}%
+\contentsline {section}{\numberline {4}Discussion}{17}{section.4}%
+\contentsline {section}{References}{18}{section*.5}%
