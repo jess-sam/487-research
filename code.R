@@ -15,6 +15,7 @@ mu <- 0
 #### True theta matrix ####
 theta_mat <- matrix(NA, nrow = R, ncol = p)
 
+set.seed(123)
 for(r in 1:R){
   for(j in 1:p){
     theta_mat[r,j] <- inverse_logit(mu, alpha_vec[r], beta_vec[j])
@@ -23,7 +24,8 @@ for(r in 1:R){
 
 
 #### Lists of 100 repetitions of all the n = 300, 1000, 3000 datasets)
-all_n300 <- repeat_data(iter = 100, n = 300)
+all_n300 <- repeat_data(iter = 10, n = 300)
+
 all_n1000 <- repeat_data(iter = 100, n = 1000)
 all_n3000 <- repeat_data(iter = 100, n = 3000)
 
@@ -37,28 +39,22 @@ all_n3000 <- repeat_data(iter = 100, n = 3000)
 pi_start <- rep(1/R, R)
 
 set.seed(123)
-mu_rand <- runif(1, min = mu - 2, max = mu + 2)
-alpha_rand <- sapply(alpha_vec[-3], function (x){runif(1, min = x - 2, max = x + 2)})
-beta_rand <- sapply(beta_vec[-5], function (x){runif(1, min = x - 2, max = x + 2)})
+mu_rand <- runif(1, min = mu - 1, max = mu + 1)
+alpha_rand <- sapply(alpha_vec[-3], function (x){runif(1, min = x - 1, max = x + 1)})
+beta_rand <- sapply(beta_vec[-5], function (x){runif(1, min = x - 1, max = x + 1)})
 
 
 param_start <- c(mu_rand, alpha_rand, beta_rand)
 
 
-res <- model_fit(all_n3002, 
+res <- model_fit(all_n300, 
                  n = 300, 
                  theta_func = theta_func, 
                  pi_start = pi_start,
                  param_start = param_start,
                  ll = optim_complete_data_ll)
 
-res#res$mu_matrix
-#t(res$mu_matrix)
-
-all_n3002[[1]][[7]]
-res$
-res
-
+res$mu_matrix
 #####################
 
 
