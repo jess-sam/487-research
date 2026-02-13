@@ -397,6 +397,14 @@ All analyses in the study were conducted using the **R** software (version 4.5.1
 
 # Results
 
+-   mention how I initialised the starting parameters for the EM algorithm
+
+-   include tables
+
+    -   m10s10 table
+
+    -   
+
 \newpage
 
 # Discussion
@@ -410,7 +418,5 @@ All analyses in the study were conducted using the **R** software (version 4.5.1
 -   kept a balanced design for simplicity, assumed that a third of the data is assigned to each cluster
 
 \newpage
-
-\bibliographystyle{apacite}
 
 # References
