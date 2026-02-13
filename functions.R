@@ -87,11 +87,6 @@ get_data <- function(n, seed, theta_mat){
   return(append(all_mat, list(true_prop_known)))
 }
 
-#y_n300 <- get_data(n = 300)
-#y_n1000 <- get_data(n = 1000)
-#y_n3000 <- get_data(n = 3000)
-
-
 #### Outward function to get repetitions of datasets ####
 
 repeat_data <- function(iter, n) {
