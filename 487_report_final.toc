@@ -17,5 +17,5 @@
 \contentsline {subsection}{\numberline {2.6}Clustering Performance Measures}{15}{subsection.2.6}%
 \contentsline {subsection}{\numberline {2.7}Statistical Software}{15}{subsection.2.7}%
 \contentsline {section}{\numberline {3}Results}{16}{section.3}%
-\contentsline {section}{\numberline {4}Discussion}{17}{section.4}%
-\contentsline {section}{References}{18}{section*.5}%
+\contentsline {section}{\numberline {4}Discussion}{19}{section.4}%
+\contentsline {section}{References}{20}{section*.7}%
