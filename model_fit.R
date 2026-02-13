@@ -1,12 +1,13 @@
 
 #### Model Fitting ####
 
-model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_start, ll){
-  # number of reps = 100
-  #reps <- length(data_list)
-  #num_scen <- 6
-  reps <- 2
-  num_scen <- 2
+model_fit <- function(data_list, n, p = 5, R = 3, 
+                      theta_func, pi_start, param_start, ll){
+
+  num_scen <- 6
+  reps <- length(data_list)
+  
+  # initialise matrices
   
   mu_matrix <- matrix(nrow = reps, ncol = num_scen)
   alpha_matrix_R1 <- matrix(nrow = reps, ncol = num_scen)
@@ -24,9 +25,10 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
   acc_matrix <- matrix(nrow = reps, ncol = num_scen)
   time_matrix <- matrix(nrow = reps, ncol = num_scen)
 
-  for(rep in 1:2){
-    for(d in 2:3){
+  for(rep in 1:reps){
+    for(d in 1:num_scen){
       
+      # start time
       start_time <- Sys.time()
       
       # Set up the group membership matrix, z_mat
@@ -38,17 +40,25 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
       n_known <- n - n_unknown
       y_data_unknown <- y_data[is.na(y_data$r_m), -c((ncol(y_data)-1):ncol(y_data))]
       
-      q = 1
-      z_known <- matrix(NA, n_known, R)
-      z_mat <- matrix(NA, n_unknown, R)
+      # q = 1
+      # z_known <- matrix(NA, n_known, R)
+      # z_mat <- matrix(NA, n_unknown, R)
+      # 
+      # for(g in y_data$r_m[!is.na(y_data$r_m)]) {
+      #   z_known[q,g] <- 1
+      #   z_known[q,-g] <- 0
+      #   q = q + 1
+      # }
       
-      for(g in y_data$r_m[!is.na(y_data$r_m)]) {
-        z_known[q,g] <- 1
-        z_known[q,-g] <- 0
-        q = q + 1
-      }
+      # Get the non-NA labels
+      y_data_known_labs <- y_data$r_m[!is.na(y_data$r_m)]
+      # Create a zero matrix first
+      z_known <- matrix(0, nrow = n_known, ncol = R)
+      # Assign 1s in the right positions using cbind
+      z_known[cbind(1:length(y_data_known_labs), y_data_known_labs)] <- 1
       
-      # initialise params
+      
+      # initialise params for alg
       
       pi_vect <- pi_start
       param_vec <- param_start
@@ -58,9 +68,11 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
       previous_pars <- rep(0, (R+p-1 + R))
       
       # Expectation and maximisation steps
-      nloops <- 0
-      
-      while (max(abs(these_pars-previous_pars)) > 0.01) {
+
+      runs <- 0
+      while(max(abs(these_pars - previous_pars)) > 1e-3){
+    
+        runs <- runs + 1
         # E step, use current pars to estimate z:
         numerators <- matrix(NA, n_unknown, R)
         for (i in 1:n_unknown){
@@ -97,37 +109,42 @@ model_fit <- function(data_list, n, p = 5, R = 3, theta_func, pi_start, param_st
         previous_pars <- these_pars
         these_pars <- c(param_vec, pi_vect)
       }
+      print(runs)
+      # take timer
+      
       end_time <- Sys.time()
       time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
-      time_matrix[rep, d-1] <- time_taken
+      time_matrix[rep, d] <- time_taken
+      
+      # compute labels
+      
+      labels_est <- max.col(z_mat[(n_known + 1):nrow(z_mat), ])
       
       
-      labels_est <- rep(NA, n_unknown)
-      for(i in 1:n_unknown){
-        labels_est[i] <- which(z_mat[(i+n_known),] == max(z_mat[i+n_known,]))
-      }
+      # labels_est <- rep(NA, n_unknown)
+      # for(i in 1:n_unknown){
+      #   labels_est[i] <- which.max(z_mat[i+n_known, ])
+      # }
       
-      acc_matrix[rep, d-1] <- mean(labels_est == y_data$r[-c(1:n_known)])
-      #print(labels_est)
-      #print(y_data$r[-c(1:n_known)])
-        #sum(labels_est == y_data$r[-c(1:n_known)])/n_unknown
+      # update matrices 
       
-      mu_matrix[rep, d-1] <- param_vec[1]
-      alpha_matrix_R1[rep, d-1] <- param_vec[2]
-      alpha_matrix_R2[rep, d-1] <- param_vec[3]
-      beta_matrix_p1[rep, d-1] <- param_vec[4]
-      beta_matrix_p2[rep, d-1] <- param_vec[5]
-      beta_matrix_p3[rep, d-1] <- param_vec[6]
-      beta_matrix_p4[rep, d-1] <- param_vec[7]
+      acc_matrix[rep, d] <- mean(labels_est == y_data$r[-c(1:n_known)])
+      
+      mu_matrix[rep, d] <- param_vec[1]
+      alpha_matrix_R1[rep, d] <- param_vec[2]
+      alpha_matrix_R2[rep, d] <- param_vec[3]
+      
+      beta_matrix_p1[rep, d] <- param_vec[4]
+      beta_matrix_p2[rep, d] <- param_vec[5]
+      beta_matrix_p3[rep, d] <- param_vec[6]
+      beta_matrix_p4[rep, d] <- param_vec[7]
 
-      pi1_matrix[rep, d-1] <- pi_vect[1]
-      pi2_matrix[rep, d-1] <- pi_vect[2]
-      pi3_matrix[rep, d-1] <- pi_vect[3]
+      pi1_matrix[rep, d] <- pi_vect[1]
+      pi2_matrix[rep, d] <- pi_vect[2]
+      pi3_matrix[rep, d] <- pi_vect[3]
       
     }
   }
-    
-  
   return(list(mu_matrix = mu_matrix,
               ar1 = alpha_matrix_R1,
               ar2 = alpha_matrix_R2,

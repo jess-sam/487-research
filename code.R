@@ -54,7 +54,7 @@ res <- model_fit(all_n300,
                  param_start = param_start,
                  ll = optim_complete_data_ll)
 
-res$mu_matrix
+all_n300[[2]]
 #####################
 
 
@@ -86,13 +86,3 @@ res$mu_matrix
 #for (r in 1:R) {
 #  theta_start[r,] <- runif(p, mean_theta/2,(1+mean_theta)/2)
 #}
-
-
-
-all_n3002 <- repeat_data(iter = 10, n = 300)
-table(all_n3002[[1]][[2]]$r_m) / sum(!is.na(all_n3002[[1]][[2]]$r_m))
-
-
-length(is.na(all_n3002[[1]][[2]]$r_m))
-
-all_n3002[[3]]

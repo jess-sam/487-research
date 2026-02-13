@@ -1,11 +1,12 @@
 
+library(dplyr)
+
 #### Inverse logit to calculate theta ####
 inverse_logit <- function(mu, alpha, beta) {
   ans <- exp(mu + alpha + beta) / (1 + exp(mu + alpha + beta))
   return(ans)
 }
 
-library(dplyr)
 #### Function to remove labels for unknown data ####
 sample_known <- function(n, m, data){
   id <- sample(1:n, size = m * n)
@@ -43,10 +44,10 @@ sample_wrong <- function(n, m, s, data){
 get_data <- function(n, seed, theta_mat){
   set.seed(seed)
   
+  true_prop_known <- matrix(nrow = 6, ncol = 3)
+  
   y_mat <- data.frame(matrix(NA, nrow = n, p))
   y_mat$r<- rep(1:R, length.out = n)
-  
-  true_prop_known <- matrix(nrow = 6, ncol = 3)
   
   for(i in 1:n){
     r <- y_mat[i, ncol(y_mat)]
@@ -54,6 +55,7 @@ get_data <- function(n, seed, theta_mat){
       y_mat[i,j] <- rbinom(1,1,prob = theta_mat[r,j])
     }
   }
+  
   # shuffle the rows 
   # indices <- sample(1:n, n)
   #  y_mat <- y_mat[indices,]
@@ -69,21 +71,20 @@ get_data <- function(n, seed, theta_mat){
   y_m30s30 <- sample_wrong(n, 0.3, 0.3, y_m30)
   y_m30s50 <- sample_wrong(n, 0.3, 0.5, y_m30)
   
-  all_mat <- list(true = y_mat, 
-                  m10s10 = y_m10s10,
+  all_mat <- list(m10s10 = y_m10s10,
                   m10s30 = y_m10s30,
                   m10s50 = y_m10s50,
                   m30s10 = y_m30s10,
                   m30s30 = y_m30s30,
-                  m30s50 = y_m30s50
-                  )
+                  m30s50 = y_m30s50)
   
   iter = 1
-  for(s in 2:7){
+  for(s in 1:6){
     true_prop_known[iter, ] <- round(as.numeric(table(all_mat[[s]]$r_m))/
                                             sum(!is.na(all_mat[[s]]$r_m)), 4)
     iter = iter + 1
   }
+  
   return(append(all_mat, list(true_prop_known)))
 }
 
@@ -92,9 +93,14 @@ get_data <- function(n, seed, theta_mat){
 repeat_data <- function(iter, n) {
   total_list <- vector(mode = "list", length = iter)
   
-  for(i in 1:iter){
-    total_list[[i]] <- get_data(n = n, seed = i, theta_mat)
-  }
+  # for(i in 1:iter){
+  #   total_list[[i]] <- get_data(n = n, seed = i, theta_mat)
+  # }
+  
+  total_list <- lapply(1:iter, function(i) {
+  get_data(n = n, seed = i, theta_mat)
+})
+
   return(total_list)
 }
 
@@ -108,13 +114,15 @@ theta_func <- function(par_vec, R = 3, p = 5, q = 2){
   beta_vec <- c(par_vec[(q+R-1):(q+R-1 + p-2)], 
                 0-sum(par_vec[(q+R-1):(q+R-1 + p-2)]))
   
-  theta_mat <- matrix(nrow = R, ncol = p)
+  theta_mat <- outer(alpha_vec, beta_vec, function(a, b) inverse_logit(mu, a, b))
   
-  for(r in 1:R){
-    for(j in 1:p){
-      theta_mat[r,j] <- inverse_logit(mu, alpha_vec[r], beta_vec[j])
-    }
-  }
+  #   theta_mat <- matrix(nrow = R, ncol = p)
+
+  # for(r in 1:R){
+  #   for(j in 1:p){
+  #     theta_mat[r,j] <- inverse_logit(mu, alpha_vec[r], beta_vec[j])
+  #   }
+  # }
   return(theta_mat)
 }
 
