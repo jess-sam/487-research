@@ -14,8 +14,13 @@
 \contentsline {subsubsection}{\numberline {2.4.2}Expectation Step (E-step)}{12}{subsubsection.2.4.2}%
 \contentsline {subsubsection}{\numberline {2.4.3}Maximisation Step (M-Step)}{13}{subsubsection.2.4.3}%
 \contentsline {subsection}{\numberline {2.5}Simulations}{13}{subsection.2.5}%
+\contentsline {subsubsection}{\numberline {2.5.1}Data Generation}{13}{subsubsection.2.5.1}%
+\contentsline {subsubsection}{\numberline {2.5.2}True Parameter Values}{15}{subsubsection.2.5.2}%
+\contentsline {subsubsection}{\numberline {2.5.3}Initial Parameter Estimates}{15}{subsubsection.2.5.3}%
 \contentsline {subsection}{\numberline {2.6}Clustering Performance Measures}{15}{subsection.2.6}%
-\contentsline {subsection}{\numberline {2.7}Statistical Software}{15}{subsection.2.7}%
-\contentsline {section}{\numberline {3}Results}{16}{section.3}%
-\contentsline {section}{\numberline {4}Discussion}{19}{section.4}%
-\contentsline {section}{References}{20}{section*.7}%
+\contentsline {subsection}{\numberline {2.7}Statistical Software}{16}{subsection.2.7}%
+\contentsline {section}{\numberline {3}Results}{17}{section.3}%
+\contentsline {section}{\numberline {4}Discussion}{26}{section.4}%
+\contentsline {section}{\numberline {5}Appendix}{27}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Table}{27}{subsection.5.1}%
+\contentsline {section}{References}{28}{section*.9}%
