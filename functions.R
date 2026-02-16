@@ -88,6 +88,50 @@ get_data <- function(n, seed, theta_mat){
   return(append(all_mat, list(true_prop_known)))
 }
 
+#### Function to get data which is all correct - standard semi-supervised
+get_data_correct <- function(n, seed, theta_mat){
+  set.seed(seed)
+  
+  true_prop_known <- matrix(nrow = 2, ncol = 3)
+  
+  y_mat <- data.frame(matrix(NA, nrow = n, p))
+  y_mat$r<- rep(1:R, length.out = n)
+  
+  for(i in 1:n){
+    r <- y_mat[i, ncol(y_mat)]
+    for(j in 1:p){
+      y_mat[i,j] <- rbinom(1,1,prob = theta_mat[r,j])
+    }
+  }
+
+  y_m10 <- sample_known(n, 0.1, y_mat)
+  y_m30 <- sample_known(n, 0.3, y_mat)
+  
+  all_mat <- list(y_m10 = y_m10,
+                  y_m30 = y_m30)
+  
+  iter = 1
+  for(s in 1:2){
+    true_prop_known[iter, ] <- round(as.numeric(table(all_mat[[s]]$r_m))/
+                                       sum(!is.na(all_mat[[s]]$r_m)), 4)
+    iter = iter + 1
+  }
+  
+  return(append(all_mat, list(true_prop_known)))
+}
+
+#### Outward function to get repetitions of datasets for correct ####
+
+repeat_data_correct <- function(iter, n) {
+  total_list <- vector(mode = "list", length = iter)
+  
+  total_list <- lapply(1:iter, function(i) {
+    get_data_correct(n = n, seed = i, theta_mat)
+  })
+  
+  return(total_list)
+}
+
 #### Outward function to get repetitions of datasets ####
 
 repeat_data <- function(iter, n) {

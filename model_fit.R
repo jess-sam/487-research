@@ -158,3 +158,148 @@ model_fit <- function(data_list, n, p = 5, R = 3,
               acc = acc_matrix,
               time = time_matrix))
 }
+
+#### Model Fitting for correct data ####
+
+model_fit_correct <- function(data_list, n, p = 5, R = 3, 
+                      theta_func, pi_start, param_start, ll){
+  
+  num_scen <- 2
+  reps <- length(data_list)
+  
+  # initialise matrices
+  
+  mu_matrix <- matrix(nrow = reps, ncol = num_scen)
+  alpha_matrix_R1 <- matrix(nrow = reps, ncol = num_scen)
+  alpha_matrix_R2 <- matrix(nrow = reps, ncol = num_scen)
+  
+  beta_matrix_p1 <- matrix(nrow = reps, ncol = num_scen)
+  beta_matrix_p2 <- matrix(nrow = reps, ncol = num_scen)
+  beta_matrix_p3 <- matrix(nrow = reps, ncol = num_scen)
+  beta_matrix_p4 <- matrix(nrow = reps, ncol = num_scen)
+  
+  pi1_matrix <- matrix(nrow = reps, ncol = num_scen)
+  pi2_matrix <- matrix(nrow = reps, ncol = num_scen)
+  pi3_matrix <- matrix(nrow = reps, ncol = num_scen)
+  
+  acc_matrix <- matrix(nrow = reps, ncol = num_scen)
+  time_matrix <- matrix(nrow = reps, ncol = num_scen)
+  
+  for(rep in 1:reps){
+    for(d in 1:num_scen){
+      
+      # start time
+      start_time <- Sys.time()
+      
+      # Set up the group membership matrix, z_mat
+      y_data <- data_list[[rep]][[d]]
+      
+      label_swap_id <- matrix(nrow = 1, ncol = R)
+      
+      n_unknown <- sum(is.na(y_data$r_m))
+      n_known <- n - n_unknown
+      y_data_unknown <- y_data[is.na(y_data$r_m), -c((ncol(y_data)-1):ncol(y_data))]
+      
+      # Get the non-NA labels
+      y_data_known_labs <- y_data$r_m[!is.na(y_data$r_m)]
+      # Create a zero matrix first
+      z_known <- matrix(0, nrow = n_known, ncol = R)
+      # Assign 1s in the right positions using cbind
+      z_known[cbind(1:length(y_data_known_labs), y_data_known_labs)] <- 1
+      
+      
+      # initialise params for alg
+      
+      pi_vect <- pi_start
+      param_vec <- param_start
+      theta_mat <- theta_func(param_vec, R, p)
+      
+      these_pars <- c(param_vec, pi_vect)
+      previous_pars <- rep(0, (R+p-1 + R))
+      
+      # Expectation and maximisation steps
+      
+      runs <- 0
+      while(max(abs(these_pars - previous_pars)) > 1e-3){
+        
+        runs <- runs + 1
+        # E step, use current pars to estimate z:
+        numerators <- matrix(NA, n_unknown, R)
+        for (i in 1:n_unknown){
+          for (r in 1:R) {
+            numerators[i,r] <- (
+              pi_vect[r]*prod(theta_mat[r,]^y_data_unknown[i,]*
+                                (1-theta_mat[r,])^(1-y_data_unknown[i,]))
+            )
+          }
+        }
+        
+        z_mat <- numerators/apply(numerators,1,sum)
+        z_mat <- rbind(z_known, z_mat)
+        
+        # M step, update parameter estimates by maximisation:
+        # Update pi vector:
+        pi_vect <- apply(z_mat,2,mean)
+        
+        # maximise model params
+        optim_res <- optim(par = param_vec,
+                           fn = optim_complete_data_ll,
+                           z_mat = z_mat,
+                           R = 3,
+                           p = 5,
+                           y_data = y_data,
+                           theta_func = theta_func,
+                           method = "L-BFGS-B",
+                           hessian = F,
+                           control = list(maxit = 10000, fnscale = -1))
+        
+        param_vec <- optim_res$par
+        
+        # update params
+        previous_pars <- these_pars
+        these_pars <- c(param_vec, pi_vect)
+      }
+      print(runs)
+      # take timer
+      
+      end_time <- Sys.time()
+      time_taken <- as.numeric(difftime(end_time, start_time, units = "secs"))
+      time_matrix[rep, d] <- time_taken
+      
+      # compute labels
+      
+      labels_est <- max.col(z_mat[(n_known + 1):nrow(z_mat), ])
+      
+      # update matrices 
+      
+      acc_matrix[rep, d] <- mean(labels_est == y_data$r[-c(1:n_known)])
+      
+      mu_matrix[rep, d] <- param_vec[1]
+      alpha_matrix_R1[rep, d] <- param_vec[2]
+      alpha_matrix_R2[rep, d] <- param_vec[3]
+      
+      beta_matrix_p1[rep, d] <- param_vec[4]
+      beta_matrix_p2[rep, d] <- param_vec[5]
+      beta_matrix_p3[rep, d] <- param_vec[6]
+      beta_matrix_p4[rep, d] <- param_vec[7]
+      
+      pi1_matrix[rep, d] <- pi_vect[1]
+      pi2_matrix[rep, d] <- pi_vect[2]
+      pi3_matrix[rep, d] <- pi_vect[3]
+      
+    }
+  }
+  return(list(mu_matrix = mu_matrix,
+              ar1 = alpha_matrix_R1,
+              ar2 = alpha_matrix_R2,
+              bp1 = beta_matrix_p1,
+              bp2 = beta_matrix_p2,
+              bp3 = beta_matrix_p3,
+              bp4 = beta_matrix_p4,
+              pi1 = pi1_matrix,
+              pi2 = pi2_matrix,
+              pi3 = pi3_matrix,
+              acc = acc_matrix,
+              time = time_matrix))
+}
+
